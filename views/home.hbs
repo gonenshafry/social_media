@@ -1,61 +1,36 @@
 <label>Username : {{myuser.username}}</label></br>
 <lable>Birthday : {{myuser.birthday}}</lable>
 
-<form method="updateHobbies" action="/updateHobbies">
+<form>
 	<label>Hobbies :</label>
 	<input type="text" name="hobbies" value={{myuser.hobbies}}> 
-	<button type="update" class="btn btn-default">Update Hobbies</button>
-</form>
-</br>
-<form method="addFriend" action="/addFriend"  onLoad="script">
-	<label>Users :</label></br>
+	<button type="update" class="btn btn-default" method="updateHobbies" action="/updateHobbies">Update Hobbies</button></br>
+
+	<label>Users :</label></br>			
 	<table align="center" border="1px" style="width:600px; line-height:40px;">
 		<tr>
 			<th>Name</th>
-				{{#each userstable }}
-					<td>{{ this.username }} </br>
-
-						<script type="text/javascript">
-							console.log("test");
-						</script>
-
-						<?php
-
-							print("test");
-							echo("test");
-
-
-							echo({{myuser.friends}});
-							echo({{this.username}});
-
-						?>
-						
-					</td>
-				{{/each}}
-		</tr>
-		<tr>
 			<th>Birthday</th>
-				{{#each userstable }}
-					<td>
-					{{ this.birthday }}
-					</td>
-				{{/each}}
-		</tr>
-		<tr>
 			<th>Hobbies</th>
-				{{#each userstable }}
-					<td>
-					{{ this.hobbies }}
-					</td>
-				{{/each}}
-		</tr>
-		<tr>
 			<th>Friends</th>
-				{{#each userstable }}
-					<td>
-					{{ this.friends }}
-					</td>
-				{{/each}}
 		</tr>
+		{{#each userstable }}
+		<tr>
+			<td>{{this.username}}</br>
+				{{#if (hasval this.friends) }}
+					<p>You are friends</p>
+				{{else}}
+					<button type="update" class="btn btn-default" method="addFriend" action="/addFriend">Add Friend</button>
+				{{/if}}
+			</td>
+
+			<td>{{this.birthday}}</td>
+
+			<td>{{this.hobbies}}</td>
+
+			<td>{{this.friends}}</td>
+		</tr>
+		{{/each}}
+
 	</table>
 </form>

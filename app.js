@@ -65,10 +65,20 @@ app.get('/createusers', (req, res) => {
 
 app.use(express.static(__dirname + '/public'));
 //handlebars setup
-app.engine('hbs',hbs({
+app.engine('hbs', hbs ({
+	helpers: {
+		hasval: function (arr) {
+			return (arr.includes(userModel.id));
+		},
+		getuserid: function() {
+			return userModel.id;
+		}
+	},
 	extname: 'hbs',
 	defaultLayout: 'layout',
-	layoutDir: __dirname + '/views'}));
+	layoutDir: __dirname + '/views/layouts'
+}));
+
 app.set('view engine', 'hbs');
 //view engine setup
 app.set('views', __dirname + '/views')
@@ -119,21 +129,21 @@ app.post('/login', (req, res) => {
 		var rdp = result[Object.keys(result)[0]];
 		userModel = userController.createUser(rdp);
 
-		res.redirect('/home');
+		res.redirect('/home2');
 	});
 });
 
 
 ////account home-page////
 //load from login
-app.get('/home', (req, res, next) => {
+app.get('/home2', (req, res, next) => {
 	//don't print current user
 	let sql = ('SELECT * FROM users WHERE ' + userModel.id + '<> users.id');
 	db.query(sql, (err, result) => {
 		if(err || result[0] == undefined) 
 			throw err;
-
-		res.render('home', {
+		
+		res.render('home2', {
 			title: 'Home Page',
 			myuser: userModel,
 			userstable: result
