@@ -4,62 +4,14 @@ const hbs = require('express-handlebars');
 
 const db = require('./db');
 var userModel = require('./models/userModel');
-var userController = require('./controllers/userController');
-
-const ip = require('ip');
-const fs = require('fs');
+const userController = require('./controllers/userController');
+const validator = require('./controllers/validator');
 
 const app = express();
 
 
-////initializing db////
-/*
-//create DB devsensedb
-app.get('/createdb', (req, res) => {
-	let sql = 'CREATE DATABASE devsensedb';
-	db.query(sql, (err, result) => {
-		if(err)
-			throw(err);
-		console.log(result);
-		res.send('database devsensedb created');
-	});
-});
-
-//create users table
-app.get('/createusertable', (req, res) => {
-	let sql = 'CREATE TABLE users (id int AUTO_INCREMENT, username VARCHAR(255), password VARCHAR(255), hobbies VARCHAR(255), birthday VARCHAR(255), friends VARCHAR(255), PRIMARY KEY(id))';
-	db.query(sql, (err, result) => {
-		if(err) throw err;
-		console.log(result);
-		res.send('Table users created');
-	});
-});
-
-function randomDate(start, end) {
-    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-}
-//create users for testing
-app.get('/createusers', (req, res) => {
-	for(var i=0; i<5 ;i++) {
-		let user = {
-			//use incrementor for name
-			username: i,
-			password: i,
-			hobbies: '',
-			//generate random date
-			birthday: randomDate(new Date(2012, 0, 1), new Date()),
-			friends: ''
-		}
-		let sql = 'INSERT INTO users SET ?';
-		let query = db.query(sql, user, (err, result) => {
-			if(err) throw err;
-			console.log(result);
-		});
-		res.send(i + ' users added');
-	}//for
-});
-*/
-
+////init db////
+//const initiator = require('./init');
 
 ////middleware////
 
@@ -103,47 +55,30 @@ var lastip='', errcnt=5;
 app.post('/login', (req, res) => {
 	let sql = ('SELECT * FROM users WHERE username = ' + req.body.username + ' AND password = ' + req.body.password);
 	db.query(sql, (err, result) => {
-		if(err) 
-			throw err;
-		//user not found, check validation
-		if(result.length >0) {
-			if(lastip==ip.address()) {
-				if (errcnt > 0)
-					errcnt--;
-				console.log('You have ' + errcnt + ' tries left');
-				if(errcnt<=0) {
-					fs.createWriteStream('log.txt', {
-  						flags: 'a' // 'a' means appending (old data will be preserved)
-					});
-					var date = new Date();
-					logger.write(lastip + ' ' + date.getTime());
-				}
-			}
-			//new ip
-			else {
-				lastip = ip.address();
-				errcnt = 5;
-			}
-		}//user not found
+		if(err || result == undefined) 
+			console.log(err);
+		//check username & password
+		validator.validate(lastip, errcnt, result);
 		//found user
+		//create new model
 		var rdp = result[Object.keys(result)[0]];
 		userModel = userController.createUser(rdp);
-
-		res.redirect('/home2');
+		//push model to update
+		res.redirect('/home');
 	});
 });
 
 
 ////account home-page////
-//load from login
-app.get('/home2', (req, res, next) => {
-	//don't print current user
-	let sql = ('SELECT * FROM users WHERE ' + userModel.id + '<> users.id');
+//load from login or reload pag from uodate
+app.get('/home', (req, res, next) => {
+	//get users table, don't print current user
+	let sql = ('SELECT * FROM users WHERE ' + userModel.id + ' <> users.id');
 	db.query(sql, (err, result) => {
-		if(err || result[0] == undefined) 
-			throw err;
-		
-		res.render('home2', {
+		if(err || result == undefined) 
+			console.log(err);
+		//push to view
+		res.render('home', {
 			title: 'Home Page',
 			myuser: userModel,
 			userstable: result
@@ -152,15 +87,46 @@ app.get('/home2', (req, res, next) => {
 });
 //post hobbie update
 app.post('/updatehobbies', (req,res) => {
-	//check hobbies <= 5
+	//get new hobbies from textbox
+	var hobbies = (req.body.hobbies).split(/[ ,]+/);
+	//post error, reload page
+	if(validator.noval(hobbies))
+		res.redirect('/home');
+	//update model
+	userModel = userController.updateUser(userModel, "hobbies", hobbies);
+	
+	//update DB
+	let sql = ('UPDATE users SET hobbies = "' + userModel.hobbies + '" WHERE id = ' + userModel.id);
+	db.query(sql, (err, result) => {
+		if(err || result == undefined) 
+			console.log(err);
+	});
 
-	res.render('home', {myuser: userModel});
+	//update view
+	res.redirect('/home');
 });
 //update friend list
 app.post('/addfriend', (req,res) => {
+
+	console.log(req.body.id);
+/*
+	let sql = "SELECT friends FROM users ";
+	db.query(sql, (err, result) => {
+		if(err || result == undefined) 
+			console.log(err);
+
+		console.log(result.affectedRows + " record(s) updated");
+
+		res.render('home', {
+			title: 'Home Page',
+			myuser: userModel,
+			userstable: result
+		});
+	});
+	*/
 	//check friends <= 5
 
-	res.render('home' + req.param.id, {myuser: userModel});
+	res.render('home');
 });
 
 
